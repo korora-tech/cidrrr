@@ -52,7 +52,7 @@ dependencies = [
 
 [[package]]
 name = "cidrrr"
-version = "2024.3.21"
+version = "2024.3.22"
 dependencies = [
  "clap",
  "ipnet",

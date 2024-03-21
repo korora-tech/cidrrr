@@ -1,6 +1,6 @@
 [package]
 name = "cidrrr"
-version = "2024.3.21"
+version = "2024.3.22"
 edition = "2021"
 authors = ["Stefan Ruzitschka <stefan@icepuma.dev>"]
 description = "Convert a CIDR block to a list of IPs"
