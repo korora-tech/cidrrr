@@ -2,6 +2,10 @@ use std::net::IpAddr;
 
 use clap::{arg, command, Parser, ValueEnum};
 use ipnet::IpNet;
+use std::iter::Iterator;
+
+// show only that many addresses, unless "--danger-zone" is set
+const HARD_LIMIT: usize = 1_048_576;
 
 #[derive(ValueEnum, Clone, Debug)]
 enum OutputFormats {
@@ -20,37 +24,47 @@ struct Cli {
     #[arg(short, long, default_value_t = false)]
     all: bool,
 
+    /// Additional toggle which has to be enabled - if set to false, we only show 2^20 (= 1.048.576) addresses
+    #[arg(long, default_value_t = false)]
+    danger_zone: bool,
+
     /// Output format
     #[arg(short, long, value_enum, default_value_t = OutputFormats::Plain)]
     output: OutputFormats,
 }
 
-fn calculate_all_ips(cidr: &str, all: bool) -> Result<Vec<IpAddr>, String> {
+fn calculate_all_ips(
+    cidr: &str,
+    all: bool,
+    danger_zone: bool,
+) -> Result<impl Iterator<Item = IpAddr>, String> {
     let ip_net = cidr
         .parse::<IpNet>()
         .map_err(|e| format!("'{cidr}' is an invalid CIDR: {e}"))?;
 
-    let ips = match ip_net {
+    let ips: Box<dyn Iterator<Item = IpAddr>> = match ip_net {
         IpNet::V4(ipv4_net) => {
-            if all {
-                let mut ips = vec![];
-                for host in ipv4_net.hosts() {
-                    ips.push(IpAddr::V4(host));
-                }
-
-                ips
+            if all && danger_zone {
+                Box::new(ipv4_net.hosts().map(IpAddr::from))
+            } else if all {
+                Box::new(ipv4_net.hosts().take(HARD_LIMIT).map(IpAddr::from))
             } else {
-                let mut hosts = ipv4_net.hosts();
+                let mut hosts = ipv4_net.hosts().map(IpAddr::from);
 
-                match (hosts.next(), hosts.last()) {
-                    (None, None) => vec![],
-                    (None, Some(last)) => vec![IpAddr::from(last)],
-                    (Some(first), None) => vec![IpAddr::from(first)],
-                    (Some(first), Some(last)) => vec![IpAddr::from(first), IpAddr::from(last)],
-                }
+                Box::new(hosts.next().into_iter().chain(hosts.last()))
             }
         }
-        IpNet::V6(_) => vec![],
+        IpNet::V6(ipv6_net) => {
+            if all && danger_zone {
+                Box::new(ipv6_net.hosts().map(IpAddr::from))
+            } else if all {
+                Box::new(ipv6_net.hosts().take(HARD_LIMIT).map(IpAddr::from))
+            } else {
+                let mut hosts = ipv6_net.hosts().map(IpAddr::from);
+
+                Box::new(hosts.next().into_iter().chain(hosts.last()))
+            }
+        }
     };
 
     Ok(ips)
@@ -61,7 +75,7 @@ fn main() {
 
     let cidr = &cli.cidr;
 
-    match calculate_all_ips(cidr, cli.all) {
+    match calculate_all_ips(cidr, cli.all, cli.danger_zone) {
         Ok(ips) => match cli.output {
             OutputFormats::Csv => {
                 println!("\"ips\"");
@@ -72,12 +86,14 @@ fn main() {
             OutputFormats::Json => {
                 print!("[");
 
-                ips.iter()
-                    .take(ips.len() - 1)
-                    .for_each(|ip| print!("\"{ip}\","));
+                let mut peekable_ips = ips.peekable();
 
-                if let Some(last_ip) = ips.last() {
-                    print!("\"{last_ip}\"");
+                while let Some(elem) = peekable_ips.next() {
+                    if peekable_ips.peek().is_none() {
+                        print!("\"{elem}\"");
+                    } else {
+                        print!("\"{elem}\",");
+                    }
                 }
 
                 println!("]");
