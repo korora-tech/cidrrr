@@ -1,0 +1,21 @@
+[package]
+name = "cidrrr"
+version = "2024.3.21"
+edition = "2021"
+authors = ["Stefan Ruzitschka <stefan@icepuma.dev>"]
+description = "Convert a CIDR block to a list of IPs"
+keywords = ["ip", "cidr", "ipv4", "ipv6"]
+repository = "https://github.com/icepuma/cidrrr"
+readme = "README.md"
+license-file = "LICENSE"
+
+[dependencies]
+clap = { version = "4", features = ["cargo", "derive"] }
+ipnet = "2"
+serde = { version = "1.0.197", features = ["derive"] }
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
+codegen-units = 1
