@@ -42,29 +42,14 @@ fn calculate_all_ips(
         .parse::<IpNet>()
         .map_err(|e| format!("'{cidr}' is an invalid CIDR: {e}"))?;
 
-    let ips: Box<dyn Iterator<Item = IpAddr>> = match ip_net {
-        IpNet::V4(ipv4_net) => {
-            if all && danger_zone {
-                Box::new(ipv4_net.hosts().map(IpAddr::from))
-            } else if all {
-                Box::new(ipv4_net.hosts().take(HARD_LIMIT).map(IpAddr::from))
-            } else {
-                let mut hosts = ipv4_net.hosts().map(IpAddr::from);
+    let ips: Box<dyn Iterator<Item = IpAddr>> = if all && danger_zone {
+        Box::new(ip_net.hosts())
+    } else if all {
+        Box::new(ip_net.hosts().take(HARD_LIMIT))
+    } else {
+        let mut hosts = ip_net.hosts();
 
-                Box::new(hosts.next().into_iter().chain(hosts.last()))
-            }
-        }
-        IpNet::V6(ipv6_net) => {
-            if all && danger_zone {
-                Box::new(ipv6_net.hosts().map(IpAddr::from))
-            } else if all {
-                Box::new(ipv6_net.hosts().take(HARD_LIMIT).map(IpAddr::from))
-            } else {
-                let mut hosts = ipv6_net.hosts().map(IpAddr::from);
-
-                Box::new(hosts.next().into_iter().chain(hosts.last()))
-            }
-        }
+        Box::new(hosts.next().into_iter().chain(hosts.last()))
     };
 
     Ok(ips)
