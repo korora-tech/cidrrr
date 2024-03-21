@@ -14,6 +14,9 @@ clap = { version = "4", features = ["cargo", "derive"] }
 ipnet = "2"
 serde = { version = "1.0.197", features = ["derive"] }
 
+[dev_dependencies]
+pretty_assertions = "1"
+
 [profile.release]
 lto = true
 strip = true
