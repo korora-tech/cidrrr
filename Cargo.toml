@@ -12,7 +12,7 @@ license-file = "LICENSE"
 [dependencies]
 clap = { version = "4", features = ["cargo", "derive"] }
 ipnet = "2"
-serde = { version = "1.0.203", features = ["derive"] }
+serde = { version = "1.0.204", features = ["derive"] }
 
 [dev_dependencies]
 pretty_assertions = "1"
