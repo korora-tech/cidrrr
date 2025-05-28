@@ -1,7 +1,7 @@
 [package]
 name = "cidrrr"
 version = "2025.4.18"
-edition = "2021"
+edition = "2024"
 authors = ["Stefan Ruzitschka <stefan@icepuma.dev>"]
 description = "Convert a CIDR block to a list of IPs"
 keywords = ["ip", "cidr", "ipv4", "ipv6"]
@@ -14,7 +14,7 @@ clap = { version = "4", features = ["cargo", "derive"] }
 ipnet = "2"
 serde = { version = "1.0.219", features = ["derive"] }
 
-[dev_dependencies]
+[dev-dependencies]
 pretty_assertions = "1"
 
 [profile.release]
